@@ -204,10 +204,32 @@ def load_mixed_sampler(datasets, duration, return_source = False):
             # Light noisy audio without voices
             audio = clean_pipeline.apply(torch.zeros(frames), config.audio.sample_rate)
 
+        # Spectogram
+        spec = spectogram(target, 
+            n_fft = config.audio.n_fft, 
+            n_mels = config.audio.n_mels, 
+            n_hop = config.audio.hop_size, 
+            n_window = config.audio.win_size,  
+            mel_norm = config.audio.mel_norm, 
+            mel_scale = config.audio.mel_scale, 
+            sample_rate = config.audio.sample_rate
+        ).transpose(0, 1).to(torch.float16)
+
+        # Spectogram with effect
+        spec_with_effect = spectogram(audio, 
+            n_fft = config.audio.n_fft, 
+            n_mels = config.audio.n_mels, 
+            n_hop = config.audio.hop_size, 
+            n_window = config.audio.win_size,  
+            mel_norm = config.audio.mel_norm, 
+            mel_scale = config.audio.mel_scale, 
+            sample_rate = config.audio.sample_rate
+        ).transpose(0, 1).to(torch.float16)
+
         if return_source:
-            return target, audio
+            return spec, spec_with_effect, target, audio
         else:
-            return audio
+            return spec, spec_with_effect
 
     return sampler
 
@@ -257,7 +279,7 @@ def load_clean_loader(datasets, duration, batch_size, num_workers, return_source
 
     return loader
     
-def load_mixed_loader(datasets, duration, return_source = False):
+def load_mixed_loader(datasets, duration, batch_size, num_workers, return_source = False):
 
     # Load sampler
     sampler = load_mixed_sampler(datasets, duration, return_source = return_source)

@@ -24,8 +24,8 @@ from accelerate.utils import set_seed
 import wandb
 
 # Local
-from supervoice_enhance.config import config
-from supervoice_enhance.model import EnhanceModel
+from supervoice_separate.config import config
+from supervoice_separate.model import SeparateModel
 from training.tensors import probability_binary_mask, drop_using_mask
 from training.dataset import load_mixed_loader
 
@@ -72,7 +72,7 @@ def main():
 
     # Prepare dataset
     accelerator.print("Loading dataset...")
-    train_loader = load_mixed_loader(datasets = train_datasets, duration = train_duration, num_workers = train_loader_workers, batch_size = train_batch_size, return_source = True)
+    train_loader = load_mixed_loader(datasets = train_datasets, duration = train_duration, num_workers = train_loader_workers, batch_size = train_batch_size)
 
     # Prepare model
     accelerator.print("Loading model...")
@@ -80,7 +80,7 @@ def main():
 
     # Model
     flow = torch.hub.load(repo_or_dir='ex3ndr/supervoice-flow', model='flow')
-    raw_model = EnhanceModel(flow, config)
+    raw_model = SeparateModel(flow, config)
     model = raw_model
     wd_params, no_wd_params = [], []
     for param in model.parameters():
