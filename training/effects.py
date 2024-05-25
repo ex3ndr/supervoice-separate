@@ -25,6 +25,9 @@ def effect(effect):
 def sox(effect):
     return SoxEffect(effect)
 
+def raw(effect, name):
+    return RawEffect(name, effect)
+
 def series(effects):
     return SeriesEffect(effects)
 
@@ -98,7 +101,7 @@ def default_noisy_pipeline(*, rirs = [], bg = []):
 def light_noisy_pipeline(*, bg = []):
     return series([
         maybe(background(bg), 0.8),
-        maybe(noise(), 0.5)
+        # maybe(noise(), 0.5)
     ])
 
 def light_noisy_voiced_pipeline(*, bg = [], voices = []):
@@ -142,6 +145,10 @@ class Effect():
         else:
             effects = resolved
 
+        # print("Apply effects")
+        # for effect in effects:
+        #     print(str(effect))
+
         # Process
         if effects is not None:
             sox_effects = []
@@ -157,7 +164,7 @@ class Effect():
                         sox_effects = []
 
                     # Apply custom effect
-                    audio = effect(audio, sample_rate)
+                    audio = effect.effect(audio, sample_rate)
 
             # Apply remaining sox effects
             if len(sox_effects) > 0:
@@ -199,7 +206,7 @@ class RirEffect(Effect):
         rir = random.choice(self.rirs)
         def apply_rir(audio, sr):
             return do_reverbrate(audio, load_mono_audio(rir, sr))
-        return self._resolve(apply_rir)
+        return self._resolve(raw(apply_rir, f'rir({rir})'))
 
 class BackgroundEffect(Effect):
     def __init__(self, files, min_snr, max_snr):
@@ -214,7 +221,7 @@ class BackgroundEffect(Effect):
         snr = random.uniform(self.min_snr, self.max_snr)
         def apply_bg(audio, sr):
             return do_background(audio, load_mono_audio(f, sr), snr)
-        return self._resolve(apply_bg)
+        return self._resolve(raw(apply_bg, f'bg({f}, {str(snr)})'))
 
 class NoiseEffect(Effect):
     def __init__(self, max_level, min_level):
@@ -228,7 +235,7 @@ class NoiseEffect(Effect):
             if cached_noise[0] is None:
                 cached_noise[0] = torch.randn_like(audio)
             return do_noise(audio, cached_noise[0], level)
-        return self._resolve(apply_noise)
+        return self._resolve(raw(apply_noise, f'noise({str(level)})'))
 
 class LostPacketsEffect(Effect):
     def __init__(self, max_lost_segments, min_lost_segments, min_segment, max_segment):
@@ -241,7 +248,7 @@ class LostPacketsEffect(Effect):
         lost = random.randint(self.min_lost_segments, self.max_lost_segments)
         def apply_lost(audio, sr):
             return do_lost_packets(audio, lost, self.min_segment, self.max_segment)
-        return self._resolve(apply_lost)
+        return self._resolve(raw(apply_lost, f'lost_packets({str(lost)})'))
 
 class SimpleEffect(Effect):
     def __init__(self, effect):

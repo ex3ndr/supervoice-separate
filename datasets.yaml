@@ -7,3 +7,4 @@ datasets:
   - common-voice@16.0-en
   - dns
   - dns@noise
+  - dns@clean
