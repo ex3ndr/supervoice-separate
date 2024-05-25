@@ -98,19 +98,18 @@ def default_noisy_pipeline(*, rirs = [], bg = []):
 def light_noisy_pipeline(*, bg = []):
     return series([
         maybe(background(bg), 0.8),
-        maybe(noise(), 0.5),
-        permutate([
-            maybe(one_of(low_pass(), band_pass()), 0.3),
-            reverbate(),
-            equalizer(),
-        ])
+        maybe(noise(), 0.5)
     ])
 
 def light_noisy_voiced_pipeline(*, bg = [], voices = []):
     return series([
         maybe(background(bg), 0.8),
         maybe(background(voices, min_snr = 1, max_snr = 20), 0.8),
-        maybe(noise(), 0.5),
+        maybe(noise(), 0.5)
+    ])
+
+def light_noisy_common_pipeline():
+    return series([
         permutate([
             maybe(one_of(low_pass(), band_pass()), 0.3),
             reverbate(),
@@ -134,11 +133,14 @@ class Effect():
             return []
         return [effect]
 
-    def apply(self, audio, sample_rate):
+    def apply(self, audio, sample_rate, resolved = None):
         source_len = audio.shape[0]
 
         # Resolve effects
-        effects = self.resolve()
+        if resolved is None:
+            effects = self.resolve()
+        else:
+            effects = resolved
 
         # Process
         if effects is not None:
@@ -221,8 +223,11 @@ class NoiseEffect(Effect):
 
     def resolve(self):
         level = random.uniform(self.min_level, self.max_level)
+        cached_noise = [None]
         def apply_noise(audio, sr):
-            return do_noise(audio, level)
+            if cached_noise[0] is None:
+                cached_noise[0] = torch.randn_like(audio)
+            return do_noise(audio, cached_noise[0], level)
         return self._resolve(apply_noise)
 
 class LostPacketsEffect(Effect):
@@ -323,10 +328,10 @@ def do_reverbrate(waveforms, rir):
 
     return waveforms
 
-def do_noise(waveforms, noise_level=0.1):
+def do_noise(waveforms, noise, noise_level=0.1):
     
     # Create noise
-    noise = torch.randn_like(waveforms)
+    # noise = torch.randn_like(waveforms)
 
     # Compute energy
     energy = torch.sqrt(torch.mean(waveforms**2))

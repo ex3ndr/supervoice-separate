@@ -2,7 +2,7 @@ import torch
 import torchaudio
 from supervoice_separate.config import config
 from supervoice_separate.audio import load_mono_audio, spectogram
-from .effects import light_noisy_pipeline, light_noisy_voiced_pipeline
+from .effects import light_noisy_pipeline, light_noisy_voiced_pipeline, light_noisy_common_pipeline
 from .distorter import create_distorter
 from pathlib import Path
 import random
@@ -170,6 +170,7 @@ def load_mixed_sampler(datasets, duration, return_source = False):
         bg_files.append(str(p))
 
     # Pipelines
+    common_pipeline = light_noisy_common_pipeline()
     clean_pipeline = light_noisy_pipeline(bg = bg_files)
     voiced_pipeline = light_noisy_voiced_pipeline(bg = bg_files, voices = files)
 
@@ -203,6 +204,11 @@ def load_mixed_sampler(datasets, duration, return_source = False):
 
             # Light noisy audio without voices
             audio = clean_pipeline.apply(torch.zeros(frames), config.audio.sample_rate)
+
+        # Apply common pipeline (guassian noise and effects are similar for both target and audio)
+        r = common_pipeline.resolve()
+        audio = common_pipeline.apply(audio, config.audio.sample_rate, resolved = r)
+        target = common_pipeline.apply(target, config.audio.sample_rate, resolved = r)
 
         # Spectogram
         spec = spectogram(target, 
