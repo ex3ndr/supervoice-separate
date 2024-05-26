@@ -30,9 +30,18 @@ from training.tensors import probability_binary_mask, drop_using_mask
 from training.dataset import load_mixed_loader
 
 # Train parameters
-train_experiment = "ft-03"
+train_experiment = "ft-04"
 train_project="supervoice-separate"
-train_datasets = ["./external_datasets/hifi-tts/audio"]
+train_datasets = [
+    "./external_datasets/dns-clean/emotional_speech/", 
+    "./external_datasets/dns-clean/french_speech/", 
+    "./external_datasets/dns-clean/german_speech/",
+    "./external_datasets/dns-clean/italian_speech/",
+    "./external_datasets/dns-clean/read_speech/",
+    "./external_datasets/dns-clean/russian_speech/",
+    "./external_datasets/dns-clean/spanish_speech/",
+    "./external_datasets/dns-clean/vctk_wav48_silence_trimmed/"
+]
 train_eval_datasets = ["./external_datasets/libritts-r/test-clean/"]
 train_duration = 10
 train_source_experiment = None
